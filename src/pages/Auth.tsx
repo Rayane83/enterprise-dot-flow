@@ -12,28 +12,92 @@ export default function Auth() {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
-    // The OAuth callback is now handled in Index.tsx
-    // This component only handles the login interface
+    console.log('🔄 Page Auth montée');
+    
+    // Handle OAuth callback if present
+    const handleAuthCallback = async () => {
+      console.log('🔍 Vérification session après callback...');
+      
+      const { data, error } = await supabase.auth.getSession();
+      console.log('📊 Session actuelle:', { 
+        hasSession: !!data.session, 
+        hasUser: !!data.session?.user,
+        error: error?.message 
+      });
+      
+      if (error) {
+        console.error('❌ Erreur session:', error);
+        toast.error('Erreur de session: ' + error.message);
+        return;
+      }
+
+      if (data.session?.user) {
+        console.log('✅ Utilisateur connecté, création/mise à jour en BDD...');
+        const discordUser = data.session.user.user_metadata;
+        console.log('👤 Données Discord:', discordUser);
+        
+        if (discordUser && discordUser.provider_id) {
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              discord_id: discordUser.provider_id,
+              username: discordUser.full_name || discordUser.name || 'Utilisateur Discord',
+              role: 'STAFF',
+              enterprise_id: 'default'
+            }, {
+              onConflict: 'discord_id'
+            });
+
+          if (upsertError) {
+            console.error('💾 Erreur création utilisateur:', upsertError);
+            toast.error('Erreur lors de la création de l\'utilisateur');
+          } else {
+            console.log('✅ Utilisateur créé/mis à jour avec succès');
+            toast.success(`Bienvenue ${discordUser.full_name || discordUser.name} !`);
+          }
+        }
+      }
+    };
+
+    // Check for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 Changement d\'état auth:', event, !!session);
+      if (event === 'SIGNED_IN' && session) {
+        console.log('📍 Redirection vers la page d\'accueil...');
+        // Redirect will be handled by the Navigate component
+      }
+    });
+
+    handleAuthCallback();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithDiscord = async () => {
     try {
       setIsSigningIn(true);
       
-      const redirectUrl = `${window.location.origin}/`;
+      console.log('🔐 Début de la connexion Discord...');
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          redirectTo: redirectUrl,
           scopes: 'identify guilds'
         }
       });
 
+      console.log('📋 Réponse OAuth Discord:', { data, error });
+
       if (error) {
+        console.error('❌ Erreur OAuth Discord:', error);
         toast.error('Erreur de connexion Discord: ' + error.message);
+      } else {
+        console.log('✅ Redirection Discord réussie');
       }
     } catch (error: any) {
+      console.error('💥 Erreur générale:', error);
       toast.error('Erreur: ' + error.message);
     } finally {
       setIsSigningIn(false);
