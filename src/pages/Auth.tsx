@@ -26,15 +26,29 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    // Simplify auth callback - just redirect on successful auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Handle auth callback with superadmin redirect
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state change on /auth page:', event, !!session);
       if (event === 'SIGNED_IN' && session) {
-        console.log('📍 Redirection vers la page d\'accueil après connexion...');
-        // Small delay to ensure user is created
+        console.log('📍 Connexion réussie, vérification du rôle...');
+        
+        // Check if user is superadmin
+        const discordId = session.user.user_metadata?.provider_id || 
+                         session.user.user_metadata?.discord_id ||
+                         session.user.id;
+        
+        const isSuperAdmin = discordId === '462716512252329996';
+        
+        // Small delay to ensure user is created in DB
         setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
+          if (isSuperAdmin) {
+            console.log('👑 SuperAdmin détecté, redirection vers paramétrage');
+            window.location.href = '/parametrage';
+          } else {
+            console.log('👤 Utilisateur normal, redirection vers accueil');
+            window.location.href = '/';
+          }
+        }, 1500);
       }
     });
 
