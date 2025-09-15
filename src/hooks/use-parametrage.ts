@@ -9,7 +9,15 @@ export function useParametrage(enterpriseId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchParametrage = async () => {
+    if (!enterpriseId) {
+      console.log('❌ Pas d\'enterprise_id, arrêt du fetch');
+      setLoading(false);
+      setParametrage(null);
+      return;
+    }
+
     try {
+      console.log('🔄 Fetch parametrage pour enterprise:', enterpriseId);
       setLoading(true);
       setError(null);
       
@@ -157,6 +165,10 @@ export function useParametrage(enterpriseId?: string) {
   useEffect(() => {
     if (enterpriseId) {
       fetchParametrage();
+    } else {
+      // If no enterprise ID, stop loading
+      setLoading(false);
+      setParametrage(null);
     }
   }, [enterpriseId]);
 

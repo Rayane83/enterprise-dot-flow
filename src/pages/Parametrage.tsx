@@ -16,6 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Parametrage() {
   const { appUser, loading: authLoading, canEdit } = useAuth();
+  
+  console.log('📊 Parametrage - Auth state:', { 
+    appUser: !!appUser, 
+    enterprise_id: appUser?.enterprise_id,
+    authLoading,
+    canEdit 
+  });
+  
   const { parametrage, loading: parametrageLoading, updateParametrage, createVersion } = useParametrage(appUser?.enterprise_id);
   const { settings: discordSettings, loading: discordLoading, updateSettings: updateDiscordSettings } = useDiscordSettings(appUser?.enterprise_id);
 
@@ -107,12 +115,20 @@ export default function Parametrage() {
     await createVersion(newVersion);
   };
 
-  if (authLoading || parametrageLoading) {
+  console.log('📊 Chargements:', { 
+    authLoading, 
+    parametrageLoading, 
+    discordLoading,
+    hasAppUser: !!appUser,
+    hasParametrage: !!parametrage 
+  });
+
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Chargement...</span>
+          <span>Chargement de l'authentification...</span>
         </div>
       </div>
     );
@@ -124,6 +140,17 @@ export default function Parametrage() {
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold">Accès non autorisé</h2>
           <p className="text-muted-foreground">Vous devez être connecté pour accéder à cette page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (parametrageLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Chargement des paramètres...</span>
         </div>
       </div>
     );
