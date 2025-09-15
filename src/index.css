@@ -2,39 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* DOT Panel - Design system professionnel comptable
+Palette : Bleu marine corporate, accents dorés, gris neutres
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 15% 97%;
+    --foreground: 215 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Bleu marine corporate */
+    --primary: 215 40% 25%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 215 40% 20%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Gris corporate */
+    --secondary: 220 10% 95%;
+    --secondary-foreground: 215 25% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 10% 96%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent doré professionnel */
+    --accent: 45 90% 60%;
+    --accent-foreground: 215 25% 15%;
+    --accent-subtle: 45 50% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success pour les validations */
+    --success: 135 60% 45%;
+    --success-foreground: 0 0% 98%;
+
+    /* Warning pour les alertes */
+    --warning: 35 85% 55%;
+    --warning-foreground: 0 0% 98%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 95%;
+    --ring: 215 40% 25%;
 
     --radius: 0.5rem;
 
