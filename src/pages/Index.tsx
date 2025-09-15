@@ -5,9 +5,59 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Navigate } from "react-router-dom";
 import { Settings, BarChart3, Users, Shield, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function Index() {
   const { appUser, loading } = useAuth();
+
+  useEffect(() => {
+    // Handle OAuth callback
+    const handleAuthCallback = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Auth error:', error);
+        toast.error('Erreur de connexion: ' + error.message);
+        return;
+      }
+
+      if (data.session?.user) {
+        // Check if user exists in our database, if not create them
+        const discordUser = data.session.user.user_metadata;
+        
+        if (discordUser) {
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              discord_id: discordUser.provider_id || data.session.user.id,
+              username: discordUser.name || discordUser.full_name || 'Utilisateur Discord',
+              role: 'STAFF',
+              enterprise_id: 'default' // Default enterprise, will be updated based on Discord roles
+            }, {
+              onConflict: 'discord_id'
+            });
+
+          if (upsertError) {
+            console.error('Error creating/updating user:', upsertError);
+          } else {
+            // Log the connection
+            await supabase.rpc('log_action', {
+              p_action_type: 'USER_LOGIN',
+              p_action_description: `Connexion Discord: ${discordUser.name || 'Utilisateur'}`,
+              p_target_table: 'users',
+              p_target_id: data.session.user.id
+            });
+            
+            toast.success(`Bienvenue ${discordUser.name || 'Utilisateur'} !`);
+          }
+        }
+      }
+    };
+
+    handleAuthCallback();
+  }, []);
 
   if (loading) {
     return (
