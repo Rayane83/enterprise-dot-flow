@@ -10,36 +10,73 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔧 Initialisation useAuth hook');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 Auth state change:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch app user data
-          const { data: userData } = await supabase
+          console.log('👤 Session utilisateur trouvée, recherche en BDD...');
+          console.log('📋 User metadata:', session.user.user_metadata);
+          
+          // Try multiple possible discord ID fields
+          const discordId = session.user.user_metadata?.provider_id || 
+                           session.user.user_metadata?.discord_id ||
+                           session.user.id;
+          
+          console.log('🔍 Recherche utilisateur avec discord_id:', discordId);
+          
+          const { data: userData, error } = await supabase
             .from('users')
             .select('*')
-            .eq('discord_id', session.user.user_metadata?.discord_id)
+            .eq('discord_id', discordId)
             .single();
           
-          setAppUser(userData);
+          console.log('📊 Résultat requête utilisateur:', { userData, error: error?.message });
+          
+          if (error && error.code === 'PGRST116') {
+            console.log('❌ Utilisateur non trouvé en BDD');
+            setAppUser(null);
+          } else if (error) {
+            console.error('💥 Erreur requête utilisateur:', error);
+            setAppUser(null);
+          } else {
+            console.log('✅ Utilisateur trouvé:', userData);
+            setAppUser(userData);
+          }
         } else {
+          console.log('🚫 Pas de session utilisateur');
           setAppUser(null);
         }
+        
+        console.log('✅ Fin du chargement auth');
         setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    console.log('🔍 Vérification session existante...');
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('📊 Session existante:', { hasSession: !!session, error: error?.message });
+      
+      if (!session) {
+        console.log('🚫 Pas de session existante, arrêt du chargement');
+        setSession(null);
+        setUser(null);
+        setAppUser(null);
+        setLoading(false);
+      }
+      // Si il y a une session, elle sera traitée par onAuthStateChange
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 Nettoyage subscription auth');
+      subscription.unsubscribe();
+    };
   }, []);
 
   return {
