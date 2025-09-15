@@ -44,3 +44,33 @@ export interface User {
   created_at: string;
   updated_at: string;
 }
+
+export interface DiscordSettings {
+  id: string;
+  enterprise_id: string;
+  main_guild_id?: string;
+  main_guild_staff_role_id?: string;
+  main_guild_patron_role_id?: string;
+  main_guild_co_patron_role_id?: string;
+  main_guild_enterprise_role_id?: string;
+  dot_guild_id?: string;
+  dot_guild_staff_role_id?: string;
+  dot_guild_dot_role_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActionLog {
+  id: string;
+  user_id: string;
+  enterprise_id: string;
+  action_type: string;
+  action_description: string;
+  target_table?: string;
+  target_id?: string;
+  old_data?: any;
+  new_data?: any;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}

@@ -8,14 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TaxBracketsTable } from "@/components/parametrage/tax-brackets-table";
 import { WealthTaxTable } from "@/components/parametrage/wealth-tax-table";
 import { formatCurrency, formatDateTime, formatDateTimeInput } from "@/lib/formatters";
-import { AlertCircle, Copy, Save, Loader2 } from "lucide-react";
+import { AlertCircle, Copy, Save, Loader2, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useParametrage } from "@/hooks/use-parametrage";
+import { useDiscordSettings } from "@/hooks/use-discord-settings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Parametrage() {
   const { appUser, loading: authLoading, canEdit } = useAuth();
   const { parametrage, loading: parametrageLoading, updateParametrage, createVersion } = useParametrage(appUser?.enterprise_id);
+  const { settings: discordSettings, loading: discordLoading, updateSettings: updateDiscordSettings } = useDiscordSettings(appUser?.enterprise_id);
+
   const [localParametrage, setLocalParametrage] = useState(parametrage);
+  const [localDiscordSettings, setLocalDiscordSettings] = useState(discordSettings);
   
   // Update local state when parametrage changes
   useEffect(() => {
@@ -24,10 +29,42 @@ export default function Parametrage() {
     }
   }, [parametrage]);
 
+  // Update local Discord settings when they change
+  useEffect(() => {
+    if (discordSettings) {
+      setLocalDiscordSettings(discordSettings);
+    } else if (!discordLoading && appUser?.enterprise_id) {
+      // Initialize empty settings if none exist
+      setLocalDiscordSettings({
+        id: '',
+        enterprise_id: appUser.enterprise_id,
+        main_guild_id: '',
+        main_guild_staff_role_id: '',
+        main_guild_patron_role_id: '',
+        main_guild_co_patron_role_id: '',
+        main_guild_enterprise_role_id: '',
+        dot_guild_id: '',
+        dot_guild_staff_role_id: '',
+        dot_guild_dot_role_id: '',
+        created_at: '',
+        updated_at: ''
+      });
+    }
+  }, [discordSettings, discordLoading, appUser?.enterprise_id]);
+
   const handleInputChange = (field: string, value: string | number) => {
     if (!canEdit || !localParametrage) return;
     
     setLocalParametrage(prev => prev ? ({
+      ...prev,
+      [field]: value
+    }) : null);
+  };
+
+  const handleDiscordInputChange = (field: string, value: string) => {
+    if (!canEdit || !localDiscordSettings) return;
+    
+    setLocalDiscordSettings(prev => prev ? ({
       ...prev,
       [field]: value
     }) : null);
@@ -45,6 +82,21 @@ export default function Parametrage() {
       bonus_max_boss: localParametrage.bonus_max_boss,
       tax_brackets: localParametrage.tax_brackets,
       wealth_tax_brackets: localParametrage.wealth_tax_brackets
+    });
+  };
+
+  const handleSaveDiscordSettings = async () => {
+    if (!canEdit || !localDiscordSettings) return;
+    
+    await updateDiscordSettings({
+      main_guild_id: localDiscordSettings.main_guild_id,
+      main_guild_staff_role_id: localDiscordSettings.main_guild_staff_role_id,
+      main_guild_patron_role_id: localDiscordSettings.main_guild_patron_role_id,
+      main_guild_co_patron_role_id: localDiscordSettings.main_guild_co_patron_role_id,
+      main_guild_enterprise_role_id: localDiscordSettings.main_guild_enterprise_role_id,
+      dot_guild_id: localDiscordSettings.dot_guild_id,
+      dot_guild_staff_role_id: localDiscordSettings.dot_guild_staff_role_id,
+      dot_guild_dot_role_id: localDiscordSettings.dot_guild_dot_role_id
     });
   };
 
@@ -103,25 +155,27 @@ export default function Parametrage() {
             <StatusBadge variant="version" value={`Version ${localParametrage.active_version}`} />
           </div>
           
-          {canEdit && (
-            <div className="flex space-x-3">
-              <Button 
-                variant="outline" 
-                onClick={handleDuplicate}
-                className="flex items-center space-x-2"
-              >
-                <Copy className="h-4 w-4" />
-                <span>Dupliquer en nouvelle version</span>
-              </Button>
-              <Button 
-                onClick={handleSave}
-                className="flex items-center space-x-2"
-              >
-                <Save className="h-4 w-4" />
-                <span>Sauvegarder</span>
-              </Button>
-            </div>
-          )}
+          <div className="flex space-x-3">
+            {canEdit && (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDuplicate}
+                  className="flex items-center space-x-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Dupliquer en nouvelle version</span>
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  className="flex items-center space-x-2"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Sauvegarder</span>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Alerte si pas éditable */}
@@ -134,176 +188,311 @@ export default function Parametrage() {
           </div>
         )}
 
-        {/* Période d'effet */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Période d'effet</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Du {formatDateTime(localParametrage.effective_from || localParametrage.open_datetime)} au {formatDateTime(localParametrage.effective_to || localParametrage.close_datetime)}
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="space-y-8">
-          {/* Paramètres temporels */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-primary">
-                Paramètres temporels
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="open_datetime">Date et heure d'ouverture comptable</Label>
-                <Input
-                  id="open_datetime"
-                  type="datetime-local"
-                  value={formatDateTimeInput(localParametrage.open_datetime)}
-                  onChange={(e) => handleInputChange('open_datetime', e.target.value)}
-                  disabled={!canEdit}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="close_datetime">Date et heure de fermeture comptable</Label>
-                <Input
-                  id="close_datetime"
-                  type="datetime-local"
-                  value={formatDateTimeInput(localParametrage.close_datetime)}
-                  onChange={(e) => handleInputChange('close_datetime', e.target.value)}
-                  disabled={!canEdit}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Plafonds salariaux */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-primary">
-                Plafonds salariaux
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="salary_max_employee">Salaire Maximum employé</Label>
-                <div className="relative">
-                  <Input
-                    id="salary_max_employee"
-                    type="number"
-                    value={localParametrage.salary_max_employee}
-                    onChange={(e) => handleInputChange('salary_max_employee', parseInt(e.target.value))}
-                    disabled={!canEdit}
-                    className="pr-12"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
+          <Tabs defaultValue="general" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="general">Paramètres Généraux</TabsTrigger>
+              <TabsTrigger value="discord">Configuration Discord</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="general" className="space-y-8">
+              {/* Période d'effet */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Période d'effet</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground">
+                    Du {formatDateTime(localParametrage.effective_from || localParametrage.open_datetime)} au {formatDateTime(localParametrage.effective_to || localParametrage.close_datetime)}
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Actuel: {formatCurrency(localParametrage.salary_max_employee)}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="bonus_max_employee">Prime Maximum employé</Label>
-                <div className="relative">
-                  <Input
-                    id="bonus_max_employee"
-                    type="number"
-                    value={localParametrage.bonus_max_employee}
-                    onChange={(e) => handleInputChange('bonus_max_employee', parseInt(e.target.value))}
-                    disabled={!canEdit}
-                    className="pr-12"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
+              {/* Paramètres temporels */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-primary">
+                    Paramètres temporels
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="open_datetime">Date et heure d'ouverture comptable</Label>
+                    <Input
+                      id="open_datetime"
+                      type="datetime-local"
+                      value={formatDateTimeInput(localParametrage.open_datetime)}
+                      onChange={(e) => handleInputChange('open_datetime', e.target.value)}
+                      disabled={!canEdit}
+                    />
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Actuel: {formatCurrency(localParametrage.bonus_max_employee)}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="salary_max_boss">Salaire Maximum patron</Label>
-                <div className="relative">
-                  <Input
-                    id="salary_max_boss"
-                    type="number"
-                    value={localParametrage.salary_max_boss}
-                    onChange={(e) => handleInputChange('salary_max_boss', parseInt(e.target.value))}
-                    disabled={!canEdit}
-                    className="pr-12"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="close_datetime">Date et heure de fermeture comptable</Label>
+                    <Input
+                      id="close_datetime"
+                      type="datetime-local"
+                      value={formatDateTimeInput(localParametrage.close_datetime)}
+                      onChange={(e) => handleInputChange('close_datetime', e.target.value)}
+                      disabled={!canEdit}
+                    />
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Actuel: {formatCurrency(localParametrage.salary_max_boss)}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="bonus_max_boss">Prime Maximum patron</Label>
-                <div className="relative">
-                  <Input
-                    id="bonus_max_boss"
-                    type="number"
-                    value={localParametrage.bonus_max_boss}
-                    onChange={(e) => handleInputChange('bonus_max_boss', parseInt(e.target.value))}
-                    disabled={!canEdit}
-                    className="pr-12"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
+              {/* Plafonds salariaux */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-primary">
+                    Plafonds salariaux
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="salary_max_employee">Salaire Maximum employé</Label>
+                    <div className="relative">
+                      <Input
+                        id="salary_max_employee"
+                        type="number"
+                        value={localParametrage.salary_max_employee}
+                        onChange={(e) => handleInputChange('salary_max_employee', parseInt(e.target.value))}
+                        disabled={!canEdit}
+                        className="pr-12"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        $
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Actuel: {formatCurrency(localParametrage.salary_max_employee)}
+                    </div>
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Actuel: {formatCurrency(localParametrage.bonus_max_boss)}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Formules calculées */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-primary">
-                Indicateurs calculés
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-accent-subtle rounded-lg">
-                <div className="font-medium text-foreground">Bénéfice de l'entreprise</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Bénéfice = CA Brut − Dépense Déductibles
-                </div>
-              </div>
-              
-              <div className="p-4 bg-accent-subtle rounded-lg">
-                <div className="font-medium text-foreground">Taux d'imposition</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  D'après la tranche CA (voir barème ci-dessous)
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="bonus_max_employee">Prime Maximum employé</Label>
+                    <div className="relative">
+                      <Input
+                        id="bonus_max_employee"
+                        type="number"
+                        value={localParametrage.bonus_max_employee}
+                        onChange={(e) => handleInputChange('bonus_max_employee', parseInt(e.target.value))}
+                        disabled={!canEdit}
+                        className="pr-12"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        $
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Actuel: {formatCurrency(localParametrage.bonus_max_employee)}
+                    </div>
+                  </div>
 
-          {/* Barèmes d'imposition */}
-          <TaxBracketsTable 
-            brackets={localParametrage.tax_brackets} 
-            isEditable={canEdit}
-          />
+                  <div className="space-y-2">
+                    <Label htmlFor="salary_max_boss">Salaire Maximum patron</Label>
+                    <div className="relative">
+                      <Input
+                        id="salary_max_boss"
+                        type="number"
+                        value={localParametrage.salary_max_boss}
+                        onChange={(e) => handleInputChange('salary_max_boss', parseInt(e.target.value))}
+                        disabled={!canEdit}
+                        className="pr-12"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        $
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Actuel: {formatCurrency(localParametrage.salary_max_boss)}
+                    </div>
+                  </div>
 
-          {/* Impôt sur la richesse */}
-          <WealthTaxTable 
-            brackets={localParametrage.wealth_tax_brackets} 
-            isEditable={canEdit}
-          />
+                  <div className="space-y-2">
+                    <Label htmlFor="bonus_max_boss">Prime Maximum patron</Label>
+                    <div className="relative">
+                      <Input
+                        id="bonus_max_boss"
+                        type="number"
+                        value={localParametrage.bonus_max_boss}
+                        onChange={(e) => handleInputChange('bonus_max_boss', parseInt(e.target.value))}
+                        disabled={!canEdit}
+                        className="pr-12"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        $
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Actuel: {formatCurrency(localParametrage.bonus_max_boss)}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Formules calculées */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-primary">
+                    Indicateurs calculés
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-accent-subtle rounded-lg">
+                    <div className="font-medium text-foreground">Bénéfice de l'entreprise</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Bénéfice = CA Brut − Dépense Déductibles
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-accent-subtle rounded-lg">
+                    <div className="font-medium text-foreground">Taux d'imposition</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      D'après la tranche CA (voir barème ci-dessous)
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Barèmes d'imposition */}
+              <TaxBracketsTable 
+                brackets={localParametrage.tax_brackets} 
+                isEditable={canEdit}
+              />
+
+              {/* Impôt sur la richesse */}
+              <WealthTaxTable 
+                brackets={localParametrage.wealth_tax_brackets} 
+                isEditable={canEdit}
+              />
+            </TabsContent>
+            
+            <TabsContent value="discord" className="space-y-8">
+              {/* Configuration Discord */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Settings className="h-5 w-5" />
+                    <CardTitle className="text-lg">Configuration Discord</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {localDiscordSettings && (
+                    <>
+                      {/* Guild Principale */}
+                      <div className="space-y-4">
+                        <h3 className="text-md font-semibold text-primary">Guild Principale</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="main_guild_id">ID Guild Principale</Label>
+                            <Input
+                              id="main_guild_id"
+                              value={localDiscordSettings.main_guild_id || ''}
+                              onChange={(e) => handleDiscordInputChange('main_guild_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="main_guild_staff_role_id">ID Rôle Staff</Label>
+                            <Input
+                              id="main_guild_staff_role_id"
+                              value={localDiscordSettings.main_guild_staff_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('main_guild_staff_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="main_guild_patron_role_id">ID Rôle Patron</Label>
+                            <Input
+                              id="main_guild_patron_role_id"
+                              value={localDiscordSettings.main_guild_patron_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('main_guild_patron_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="main_guild_co_patron_role_id">ID Rôle Co-Patron</Label>
+                            <Input
+                              id="main_guild_co_patron_role_id"
+                              value={localDiscordSettings.main_guild_co_patron_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('main_guild_co_patron_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="main_guild_enterprise_role_id">ID Rôle Entreprise</Label>
+                            <Input
+                              id="main_guild_enterprise_role_id"
+                              value={localDiscordSettings.main_guild_enterprise_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('main_guild_enterprise_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Guild DOT */}
+                      <div className="space-y-4">
+                        <h3 className="text-md font-semibold text-primary">Guild DOT</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="dot_guild_id">ID Guild DOT</Label>
+                            <Input
+                              id="dot_guild_id"
+                              value={localDiscordSettings.dot_guild_id || ''}
+                              onChange={(e) => handleDiscordInputChange('dot_guild_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="dot_guild_staff_role_id">ID Rôle Staff DOT</Label>
+                            <Input
+                              id="dot_guild_staff_role_id"
+                              value={localDiscordSettings.dot_guild_staff_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('dot_guild_staff_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="dot_guild_dot_role_id">ID Rôle DOT</Label>
+                            <Input
+                              id="dot_guild_dot_role_id"
+                              value={localDiscordSettings.dot_guild_dot_role_id || ''}
+                              onChange={(e) => handleDiscordInputChange('dot_guild_dot_role_id', e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="123456789012345678"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {canEdit && (
+                        <div className="pt-4">
+                          <Button onClick={handleSaveDiscordSettings} className="flex items-center space-x-2">
+                            <Save className="h-4 w-4" />
+                            <span>Sauvegarder Configuration Discord</span>
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
