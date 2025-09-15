@@ -39,14 +39,65 @@ export function useAuth() {
           console.log('📊 Résultat requête utilisateur:', { userData, error: error?.message });
           
           if (error && error.code === 'PGRST116') {
-            console.log('❌ Utilisateur non trouvé en BDD');
-            setAppUser(null);
+            console.log('❌ Utilisateur non trouvé, création automatique...');
+            
+            // Create user automatically
+            const newUser = {
+              discord_id: discordId,
+              username: session.user.user_metadata?.full_name || 
+                       session.user.user_metadata?.name || 
+                       session.user.user_metadata?.username ||
+                       `Utilisateur-${discordId.slice(-4)}`,
+              role: 'STAFF' as const,
+              enterprise_id: 'default',
+              is_superadmin: discordId === '462716512252329996' // SuperAdmin par défaut
+            };
+            
+            console.log('🏗️ Création utilisateur:', newUser);
+            
+            const { data: createdUser, error: createError } = await supabase
+              .from('users')
+              .insert(newUser)
+              .select()
+              .single();
+            
+            if (createError) {
+              console.error('💥 Erreur création utilisateur:', createError);
+              setAppUser(null);
+            } else {
+              console.log('✅ Utilisateur créé avec succès:', createdUser);
+              setAppUser(createdUser);
+              
+              // Log the connection
+              try {
+                await supabase.rpc('log_action', {
+                  p_action_type: 'USER_FIRST_LOGIN',
+                  p_action_description: `Première connexion Discord: ${newUser.username}`,
+                  p_target_table: 'users',
+                  p_target_id: createdUser.id
+                });
+              } catch (logError) {
+                console.error('⚠️ Erreur logging (non bloquant):', logError);
+              }
+            }
           } else if (error) {
             console.error('💥 Erreur requête utilisateur:', error);
             setAppUser(null);
           } else {
             console.log('✅ Utilisateur trouvé:', userData);
             setAppUser(userData);
+            
+            // Log regular login
+            try {
+              await supabase.rpc('log_action', {
+                p_action_type: 'USER_LOGIN',
+                p_action_description: `Connexion Discord: ${userData.username}`,
+                p_target_table: 'users',
+                p_target_id: userData.id
+              });
+            } catch (logError) {
+              console.error('⚠️ Erreur logging (non bloquant):', logError);
+            }
           }
         } else {
           console.log('🚫 Pas de session utilisateur');
