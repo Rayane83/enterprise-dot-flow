@@ -77,8 +77,6 @@ export function useAuth() {
                 
                 if (createError) {
                   console.error('💥 Erreur création utilisateur:', createError);
-                  // Force sign out on creation error
-                  await supabase.auth.signOut();
                   setAppUser(null);
                 } else {
                   console.log('✅ Utilisateur créé avec succès:', createdUser);
