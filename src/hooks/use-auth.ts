@@ -44,11 +44,21 @@ export function useAuth() {
             console.log('🔍 Recherche utilisateur avec discord_id:', discordId);
             
             try {
-              const { data: userData, error } = await supabase
+              // First try to find user by auth.uid()
+              let { data: userData, error } = await supabase
                 .from('users')
                 .select('*')
-                .eq('discord_id', discordId)
+                .eq('id', session.user.id)
                 .single();
+              
+              // If not found by ID, try by discord_id for backward compatibility
+              if (error && error.code === 'PGRST116') {
+                ({ data: userData, error } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('discord_id', discordId)
+                  .single());
+              }
               
               console.log('📊 Résultat requête utilisateur:', { userData, error: error?.message });
               
@@ -57,14 +67,16 @@ export function useAuth() {
                 
                 // Create user automatically
                 const newUser = {
+                  id: session.user.id, // Use Supabase auth user ID
                   discord_id: discordId,
                   username: session.user.user_metadata?.full_name || 
                            session.user.user_metadata?.name || 
                            session.user.user_metadata?.username ||
-                           `Utilisateur-${discordId.slice(-4)}`,
+                           session.user.email?.split('@')[0] ||
+                           `User-${discordId.slice(-4)}`,
                   role: 'STAFF' as const,
                   enterprise_id: 'default',
-                  is_superadmin: discordId === '462716512252329996' // SuperAdmin par défaut
+                  is_superadmin: discordId === '462716512252329996'
                 };
                 
                 console.log('🏗️ Création utilisateur:', newUser);
