@@ -17,6 +17,7 @@ export interface WealthTaxBracket {
 }
 
 export interface Parametrage {
+  id: string;
   enterprise_id: string;
   active_version: string;
   effective_from?: string;
@@ -29,6 +30,8 @@ export interface Parametrage {
   bonus_max_boss: number;
   tax_brackets: TaxBracket[];
   wealth_tax_brackets: WealthTaxBracket[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface User {
@@ -37,4 +40,7 @@ export interface User {
   username: string;
   role: UserRole;
   enterprise_id: string;
+  is_superadmin: boolean;
+  created_at: string;
+  updated_at: string;
 }

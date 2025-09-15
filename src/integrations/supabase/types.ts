@@ -14,16 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      parametrage: {
+        Row: {
+          active_version: string
+          bonus_max_boss: number
+          bonus_max_employee: number
+          close_datetime: string
+          created_at: string
+          effective_from: string | null
+          effective_to: string | null
+          enterprise_id: string
+          id: string
+          open_datetime: string
+          salary_max_boss: number
+          salary_max_employee: number
+          tax_brackets: Json
+          updated_at: string
+          wealth_tax_brackets: Json
+        }
+        Insert: {
+          active_version?: string
+          bonus_max_boss?: number
+          bonus_max_employee?: number
+          close_datetime: string
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          enterprise_id: string
+          id?: string
+          open_datetime: string
+          salary_max_boss?: number
+          salary_max_employee?: number
+          tax_brackets?: Json
+          updated_at?: string
+          wealth_tax_brackets?: Json
+        }
+        Update: {
+          active_version?: string
+          bonus_max_boss?: number
+          bonus_max_employee?: number
+          close_datetime?: string
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          enterprise_id?: string
+          id?: string
+          open_datetime?: string
+          salary_max_boss?: number
+          salary_max_employee?: number
+          tax_brackets?: Json
+          updated_at?: string
+          wealth_tax_brackets?: Json
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          discord_id: string
+          enterprise_id: string
+          id: string
+          is_superadmin: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          discord_id: string
+          enterprise_id: string
+          id?: string
+          is_superadmin?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          discord_id?: string
+          enterprise_id?: string
+          id?: string
+          is_superadmin?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          discord_id: string
+          enterprise_id: string
+          is_superadmin: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          username: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "PATRON" | "CO-PATRON" | "STAFF" | "DOT" | "SUPERSTAFF"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +246,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["PATRON", "CO-PATRON", "STAFF", "DOT", "SUPERSTAFF"],
+    },
   },
 } as const

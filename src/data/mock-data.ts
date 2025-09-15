@@ -2,13 +2,17 @@ import { Parametrage, User } from "@/types/dot";
 
 export const mockUser: User = {
   id: "1",
-  discord_id: "123456789012345678",
-  username: "Jean Dupont",
-  role: "SUPERSTAFF", // Changez en "PATRON" pour tester les permissions
-  enterprise_id: "123456789012345678"
+  discord_id: "462716512252329996",
+  username: "SuperAdmin",  
+  role: "SUPERSTAFF",
+  enterprise_id: "123456789012345678",
+  is_superadmin: true,
+  created_at: "2025-01-01T00:00:00Z",
+  updated_at: "2025-01-01T00:00:00Z"
 };
 
 export const mockParametrage: Parametrage = {
+  id: "1",
   enterprise_id: "123456789012345678",
   active_version: "v1",
   effective_from: "2025-09-15T00:00:00+02:00",
@@ -19,6 +23,8 @@ export const mockParametrage: Parametrage = {
   bonus_max_employee: 5000,
   salary_max_boss: 35000,
   bonus_max_boss: 8000,
+  created_at: "2025-01-01T00:00:00Z",
+  updated_at: "2025-01-01T00:00:00Z",
   tax_brackets: [
     { min_inclusive: 0, max_inclusive: 9999, taux_imposition_percent: 7, salaire_max_employe: 10000, salaire_max_patron: 12000, prime_max_employe: 2000, prime_max_patron: 3000 },
     { min_inclusive: 10000, max_inclusive: 29999, taux_imposition_percent: 9, salaire_max_employe: 12000, salaire_max_patron: 14000, prime_max_employe: 2500, prime_max_patron: 3500 },
