@@ -8,8 +8,22 @@ import { MessageSquare, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Auth() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, session } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+
+  // Add manual disconnect option
+  const handleDisconnect = async () => {
+    console.log('🔌 Déconnexion manuelle demandée...');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('❌ Erreur déconnexion:', error);
+      toast.error('Erreur lors de la déconnexion');
+    } else {
+      console.log('✅ Déconnexion réussie');
+      toast.success('Déconnecté avec succès');
+      window.location.reload(); // Force reload to clear state
+    }
+  };
 
   useEffect(() => {
     // Simplify auth callback - just redirect on successful auth
@@ -17,7 +31,10 @@ export default function Auth() {
       console.log('🔄 Auth state change on /auth page:', event, !!session);
       if (event === 'SIGNED_IN' && session) {
         console.log('📍 Redirection vers la page d\'accueil après connexion...');
-        window.location.href = '/';
+        // Small delay to ensure user is created
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
       }
     });
 
@@ -58,9 +75,18 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Chargement...</span>
+          {/* Emergency disconnect button */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDisconnect}
+            className="mt-4 text-xs"
+          >
+            Forcer la déconnexion
+          </Button>
         </div>
       </div>
     );
@@ -69,6 +95,9 @@ export default function Auth() {
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
+
+  // Show disconnect option if there's a session but no app user
+  const showDisconnectOption = session && !isAuthenticated;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -105,6 +134,17 @@ export default function Auth() {
                 {isSigningIn ? 'Connexion...' : 'Se connecter avec Discord'}
               </span>
             </Button>
+            
+            {showDisconnectOption && (
+              <Button
+                onClick={handleDisconnect}
+                variant="outline"
+                className="w-full flex items-center justify-center space-x-2 border-red-300 text-red-600 hover:bg-red-50"
+                size="sm"
+              >
+                <span>Problème de connexion ? Cliquez ici</span>
+              </Button>
+            )}
             
             <div className="text-center text-sm text-muted-foreground">
               <p>Votre rôle sera automatiquement détecté</p>
