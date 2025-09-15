@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          action_description: string
+          action_type: string
+          created_at: string
+          enterprise_id: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          target_id: string | null
+          target_table: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          created_at?: string
+          enterprise_id: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          created_at?: string
+          enterprise_id?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discord_settings: {
+        Row: {
+          created_at: string
+          dot_guild_dot_role_id: string | null
+          dot_guild_id: string | null
+          dot_guild_staff_role_id: string | null
+          enterprise_id: string
+          id: string
+          main_guild_co_patron_role_id: string | null
+          main_guild_enterprise_role_id: string | null
+          main_guild_id: string | null
+          main_guild_patron_role_id: string | null
+          main_guild_staff_role_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dot_guild_dot_role_id?: string | null
+          dot_guild_id?: string | null
+          dot_guild_staff_role_id?: string | null
+          enterprise_id: string
+          id?: string
+          main_guild_co_patron_role_id?: string | null
+          main_guild_enterprise_role_id?: string | null
+          main_guild_id?: string | null
+          main_guild_patron_role_id?: string | null
+          main_guild_staff_role_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dot_guild_dot_role_id?: string | null
+          dot_guild_id?: string | null
+          dot_guild_staff_role_id?: string | null
+          enterprise_id?: string
+          id?: string
+          main_guild_co_patron_role_id?: string | null
+          main_guild_enterprise_role_id?: string | null
+          main_guild_id?: string | null
+          main_guild_patron_role_id?: string | null
+          main_guild_staff_role_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       parametrage: {
         Row: {
           active_version: string
@@ -116,6 +214,17 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      log_action: {
+        Args: {
+          p_action_description: string
+          p_action_type: string
+          p_new_data?: Json
+          p_old_data?: Json
+          p_target_id?: string
+          p_target_table?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
