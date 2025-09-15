@@ -16,96 +16,125 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state change:', event, !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
         
-        if (session?.user) {
-          console.log('👤 Session utilisateur trouvée, recherche en BDD...');
-          console.log('📋 User metadata:', session.user.user_metadata);
+        // Handle sign out or invalid sessions
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('🚫 Session supprimée ou invalide');
+          setSession(null);
+          setUser(null);
+          setAppUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // Handle errors in session (like future timestamp)
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
           
-          // Try multiple possible discord ID fields
-          const discordId = session.user.user_metadata?.provider_id || 
-                           session.user.user_metadata?.discord_id ||
-                           session.user.id;
-          
-          console.log('🔍 Recherche utilisateur avec discord_id:', discordId);
-          
-          try {
-            const { data: userData, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('discord_id', discordId)
-              .single();
+          if (session?.user) {
+            console.log('👤 Session utilisateur trouvée, recherche en BDD...');
+            console.log('📋 User metadata:', session.user.user_metadata);
             
-            console.log('📊 Résultat requête utilisateur:', { userData, error: error?.message });
+            // Try multiple possible discord ID fields
+            const discordId = session.user.user_metadata?.provider_id || 
+                             session.user.user_metadata?.discord_id ||
+                             session.user.id;
             
-            if (error && error.code === 'PGRST116') {
-              console.log('❌ Utilisateur non trouvé, création automatique...');
-              
-              // Create user automatically
-              const newUser = {
-                discord_id: discordId,
-                username: session.user.user_metadata?.full_name || 
-                         session.user.user_metadata?.name || 
-                         session.user.user_metadata?.username ||
-                         `Utilisateur-${discordId.slice(-4)}`,
-                role: 'STAFF' as const,
-                enterprise_id: 'default',
-                is_superadmin: discordId === '462716512252329996' // SuperAdmin par défaut
-              };
-              
-              console.log('🏗️ Création utilisateur:', newUser);
-              
-              const { data: createdUser, error: createError } = await supabase
+            console.log('🔍 Recherche utilisateur avec discord_id:', discordId);
+            
+            try {
+              const { data: userData, error } = await supabase
                 .from('users')
-                .insert(newUser)
-                .select()
+                .select('*')
+                .eq('discord_id', discordId)
                 .single();
               
-              if (createError) {
-                console.error('💥 Erreur création utilisateur:', createError);
+              console.log('📊 Résultat requête utilisateur:', { userData, error: error?.message });
+              
+              if (error && error.code === 'PGRST116') {
+                console.log('❌ Utilisateur non trouvé, création automatique...');
+                
+                // Create user automatically
+                const newUser = {
+                  discord_id: discordId,
+                  username: session.user.user_metadata?.full_name || 
+                           session.user.user_metadata?.name || 
+                           session.user.user_metadata?.username ||
+                           `Utilisateur-${discordId.slice(-4)}`,
+                  role: 'STAFF' as const,
+                  enterprise_id: 'default',
+                  is_superadmin: discordId === '462716512252329996' // SuperAdmin par défaut
+                };
+                
+                console.log('🏗️ Création utilisateur:', newUser);
+                
+                const { data: createdUser, error: createError } = await supabase
+                  .from('users')
+                  .insert(newUser)
+                  .select()
+                  .single();
+                
+                if (createError) {
+                  console.error('💥 Erreur création utilisateur:', createError);
+                  // Force sign out on creation error
+                  await supabase.auth.signOut();
+                  setAppUser(null);
+                } else {
+                  console.log('✅ Utilisateur créé avec succès:', createdUser);
+                  setAppUser(createdUser);
+                }
+              } else if (error) {
+                console.error('💥 Erreur requête utilisateur:', error);
+                // Force sign out on DB error
+                await supabase.auth.signOut();
                 setAppUser(null);
               } else {
-                console.log('✅ Utilisateur créé avec succès:', createdUser);
-                setAppUser(createdUser);
+                console.log('✅ Utilisateur trouvé:', userData);
+                setAppUser(userData);
               }
-            } else if (error) {
-              console.error('💥 Erreur requête utilisateur:', error);
+            } catch (err) {
+              console.error('🚨 Erreur générale:', err);
+              // Force sign out on general error
+              await supabase.auth.signOut();
               setAppUser(null);
-            } else {
-              console.log('✅ Utilisateur trouvé:', userData);
-              setAppUser(userData);
             }
-          } catch (err) {
-            console.error('🚨 Erreur générale:', err);
-            setAppUser(null);
           }
-        } else {
-          console.log('🚫 Pas de session utilisateur');
+        } catch (error) {
+          console.error('🚨 Erreur session invalide:', error);
+          // Force sign out on session error
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
           setAppUser(null);
         }
-        
-        // TOUJOURS arrêter le chargement après 3 secondes maximum
-        setTimeout(() => {
-          console.log('⏰ Timeout: Arrêt forcé du chargement');
-          setLoading(false);
-        }, 500);
         
         console.log('✅ Fin du chargement auth');
         setLoading(false);
       }
     );
 
-    // Check for existing session avec timeout
+    // Check for existing session with error handling
     console.log('🔍 Vérification session existante...');
     const sessionTimeout = setTimeout(() => {
       console.log('⏰ Timeout session: Arrêt du chargement');
       setLoading(false);
-    }, 2000);
+    }, 3000);
 
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       clearTimeout(sessionTimeout);
       console.log('📊 Session existante:', { hasSession: !!session, error: error?.message });
+      
+      if (error) {
+        console.error('💥 Erreur session:', error);
+        // Force clean state on session error
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setAppUser(null);
+        setLoading(false);
+        return;
+      }
       
       if (!session) {
         console.log('🚫 Pas de session existante, arrêt du chargement');
@@ -114,10 +143,15 @@ export function useAuth() {
         setAppUser(null);
         setLoading(false);
       }
-      // Si il y a une session, elle sera traitée par onAuthStateChange
+      // Si il y a une session valide, elle sera traitée par onAuthStateChange
     }).catch(err => {
       clearTimeout(sessionTimeout);
       console.error('💥 Erreur getSession:', err);
+      // Force clean state on catch
+      supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      setAppUser(null);
       setLoading(false);
     });
 
