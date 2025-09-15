@@ -96,8 +96,6 @@ export function useAuth() {
                 }
               } else if (error) {
                 console.error('💥 Erreur requête utilisateur:', error);
-                // Force sign out on DB error
-                await supabase.auth.signOut();
                 setAppUser(null);
               } else {
                 console.log('✅ Utilisateur trouvé:', userData);
@@ -105,15 +103,11 @@ export function useAuth() {
               }
             } catch (err) {
               console.error('🚨 Erreur générale:', err);
-              // Force sign out on general error
-              await supabase.auth.signOut();
               setAppUser(null);
             }
           }
         } catch (error) {
           console.error('🚨 Erreur session invalide:', error);
-          // Force sign out on session error
-          await supabase.auth.signOut();
           setSession(null);
           setUser(null);
           setAppUser(null);
@@ -137,8 +131,6 @@ export function useAuth() {
       
       if (error) {
         console.error('💥 Erreur session:', error);
-        // Force clean state on session error
-        supabase.auth.signOut();
         setSession(null);
         setUser(null);
         setAppUser(null);
@@ -157,8 +149,6 @@ export function useAuth() {
     }).catch(err => {
       clearTimeout(sessionTimeout);
       console.error('💥 Erreur getSession:', err);
-      // Force clean state on catch
-      supabase.auth.signOut();
       setSession(null);
       setUser(null);
       setAppUser(null);
