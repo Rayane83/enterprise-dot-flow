@@ -48,7 +48,7 @@ export default function Auth() {
             console.log('👤 Utilisateur normal, redirection vers accueil');
             window.location.href = '/';
           }
-        }, 1500);
+        }, 2000);
       }
     });
 
