@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth-local";
 import { Navigate } from "react-router-dom";
 import { Settings, BarChart3, Users, Shield, Loader2 } from "lucide-react";
 

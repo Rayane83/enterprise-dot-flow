@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import Parametrage from "@/pages/Parametrage";
-import Auth from "@/pages/Auth";
+import AuthLocal from "@/pages/AuthLocal";
 import Logs from "@/pages/Logs";
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/sonner";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth-local";
 
 // Protected Route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -41,7 +41,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth" element={<AuthLocal />} />
         <Route path="/" element={
           <ProtectedRoute>
             <Index />

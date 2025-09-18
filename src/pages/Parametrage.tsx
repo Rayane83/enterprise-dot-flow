@@ -9,9 +9,9 @@ import { TaxBracketsTable } from "@/components/parametrage/tax-brackets-table";
 import { WealthTaxTable } from "@/components/parametrage/wealth-tax-table";
 import { formatCurrency, formatDateTime, formatDateTimeInput } from "@/lib/formatters";
 import { AlertCircle, Copy, Save, Loader2, Settings } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { useParametrage } from "@/hooks/use-parametrage";
-import { useDiscordSettings } from "@/hooks/use-discord-settings";
+import { useAuth } from "@/hooks/use-auth-local";
+import { useParametrage } from "@/hooks/use-parametrage-local";
+import { useDiscordSettings } from "@/hooks/use-discord-settings-local";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Parametrage() {

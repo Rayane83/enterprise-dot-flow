@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth-local";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -19,15 +19,13 @@ interface HeaderProps {
 }
 
 export function Header({ user }: HeaderProps) {
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Erreur lors de la déconnexion");
-    } else {
-      navigate("/auth");
-    }
+  const handleSignOut = () => {
+    logout();
+    toast.success("Déconnexion réussie");
+    navigate("/auth");
   };
 
   const getRoleColor = (role: string) => {
@@ -54,7 +52,7 @@ export function Header({ user }: HeaderProps) {
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-primary">Panel DOT</h1>
             <Badge variant="outline" className="text-xs">
-              Multi-Entreprise
+              Version Locale
             </Badge>
           </div>
 
@@ -63,7 +61,7 @@ export function Header({ user }: HeaderProps) {
             <div className="flex items-center space-x-3">
               <div className="text-right">
                 <div className="font-medium text-foreground">{user.username}</div>
-                <div className="text-xs text-muted-foreground">Discord: {user.discord_id}</div>
+                <div className="text-xs text-muted-foreground">ID: {user.discord_id}</div>
               </div>
               <Badge className={getRoleColor(user.role)}>
                 {user.role}
